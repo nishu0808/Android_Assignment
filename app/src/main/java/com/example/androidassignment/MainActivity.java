@@ -1,30 +1,27 @@
 package com.example.androidassignment;
 
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
-
-import android.Manifest;
-import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
-import android.widget.ListAdapter;
-import android.widget.SimpleAdapter;
+import android.widget.ListView;
 import android.widget.Toast;
 
+import com.example.androidassignment.adapter.CustomAdapter;
 import com.example.androidassignment.http.HttpService;
+import com.example.androidassignment.model.Books;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.lang.ref.WeakReference;
-import java.util.Calendar;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Locale;
+
+import androidx.appcompat.app.AppCompatActivity;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -32,10 +29,16 @@ public class MainActivity extends AppCompatActivity {
     private static String baseUrl = "https://api.nytimes.com/svc/books/v2/lists/overview.json?published_date=";
     private static String apiKey = "76363c9e70bc401bac1e6ad88b13bd1d";
 
+    private ArrayList<Books> booksList;
+    private ListView listView;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        listView = findViewById(R.id.list_view);
+
         new FetchData(this).execute();
     }
 
@@ -64,6 +67,28 @@ public class MainActivity extends AppCompatActivity {
             if (jsonStr != null) {
                 try {
                     JSONObject jsonObj = new JSONObject(jsonStr);
+                    JSONObject results = jsonObj.getJSONObject("results");
+                    JSONArray lists = results.getJSONArray("lists");
+
+                    mainActivity.booksList = new ArrayList<>();
+
+                    for(int i = 0; i < lists.length();i++) {
+                        JSONObject lobj = lists.getJSONObject(i);
+                        JSONArray books = lobj.getJSONArray("books");
+
+                        for(int j = 0; j < books.length(); j++) {
+                            JSONObject obj = books.getJSONObject(j);
+
+                            Books book = new Books();
+                            book.setTitle(obj.getString("title"));
+                            book.setAuthor(obj.getString("author"));
+                            book.setPublisher(obj.getString("publisher"));
+                            book.setContributor(obj.getString("contributor"));
+                            book.setDescription(obj.getString("description"));
+
+                            mainActivity.booksList.add(book);
+                        }
+                    }
                 } catch (final JSONException e) {
                     mainActivity.runOnUiThread(new Runnable() {
                         @Override
@@ -87,6 +112,9 @@ public class MainActivity extends AppCompatActivity {
         @Override
         protected void onPostExecute(Void result) {
             super.onPostExecute(result);
+            final MainActivity mainActivity = activityReference.get();
+            CustomAdapter adapter = new CustomAdapter(mainActivity.booksList,mainActivity);
+            mainActivity.listView.setAdapter(adapter);
         }
     }
 
