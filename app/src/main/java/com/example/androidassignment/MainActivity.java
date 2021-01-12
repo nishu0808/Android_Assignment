@@ -2,7 +2,10 @@ package com.example.androidassignment;
 
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
+import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.Toast;
 
@@ -31,6 +34,9 @@ public class MainActivity extends AppCompatActivity {
 
     private ArrayList<Books> booksList;
     private ListView listView;
+    private EditText editText;
+
+    private CustomAdapter adapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,6 +44,25 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         listView = findViewById(R.id.list_view);
+        editText = findViewById(R.id.edit_text);
+
+        editText.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                if(adapter != null)
+                    adapter.getFilter().filter(s.toString());
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+
+            }
+        });
 
         new FetchData(this).execute();
     }
@@ -113,8 +138,8 @@ public class MainActivity extends AppCompatActivity {
         protected void onPostExecute(Void result) {
             super.onPostExecute(result);
             final MainActivity mainActivity = activityReference.get();
-            CustomAdapter adapter = new CustomAdapter(mainActivity.booksList,mainActivity);
-            mainActivity.listView.setAdapter(adapter);
+            mainActivity.adapter = new CustomAdapter(mainActivity.booksList,mainActivity);
+            mainActivity.listView.setAdapter(mainActivity.adapter);
         }
     }
 

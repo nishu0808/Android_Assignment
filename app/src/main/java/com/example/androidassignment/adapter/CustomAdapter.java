@@ -1,13 +1,13 @@
 package com.example.androidassignment.adapter;
 
-import android.content.Context;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.animation.Animation;
-import android.view.animation.AnimationUtils;
 import android.widget.ArrayAdapter;
-import android.widget.ImageView;
+import android.widget.BaseAdapter;
+import android.widget.Filter;
+import android.widget.Filterable;
 import android.widget.TextView;
 
 import com.example.androidassignment.MainActivity;
@@ -16,9 +16,12 @@ import com.example.androidassignment.model.Books;
 
 import java.util.ArrayList;
 
-public class CustomAdapter extends ArrayAdapter<Books> {
+public class CustomAdapter extends BaseAdapter implements Filterable {
 
-    private ArrayList<Books> dataList;
+    private ArrayList<Books> bookList;
+    private ArrayList<Books> filteredList;
+    private ArrayList<Books> originalList;
+
     private MainActivity activity;
 
     private static class ViewHolder {
@@ -30,20 +33,34 @@ public class CustomAdapter extends ArrayAdapter<Books> {
     }
 
     public CustomAdapter(ArrayList<Books> data, MainActivity activity) {
-        super(activity, R.layout.row_item, data);
-        this.dataList = data;
+        this.bookList = data;
+        this.originalList = data;
         this.activity = activity;
     }
 
     @Override
+    public int getCount() {
+        return bookList.size();
+    }
+
+    @Override
+    public Object getItem(int position) {
+        return position;
+    }
+
+    @Override
+    public long getItemId(int position) {
+        return position;
+    }
+
+    @Override
     public View getView(int position, View convertView, ViewGroup parent) {
-        Books books = dataList.get(position);
+        Books books = bookList.get(position);
         ViewHolder viewHolder;
 
         if (convertView == null) {
-
             viewHolder = new ViewHolder();
-            LayoutInflater inflater = LayoutInflater.from(getContext());
+            LayoutInflater inflater = LayoutInflater.from(activity);
             convertView  = inflater.inflate(R.layout.row_item, parent, false);
             viewHolder.title       = convertView.findViewById(R.id.title);
             viewHolder.author      = convertView.findViewById(R.id.author);
@@ -61,5 +78,50 @@ public class CustomAdapter extends ArrayAdapter<Books> {
         }
         // Return the completed view to render on screen
         return convertView;
+    }
+
+    @Override
+    public Filter getFilter() {
+        return new Filter() {
+
+            @SuppressWarnings("unchecked")
+            @Override
+            protected void publishResults(CharSequence constraint,FilterResults results) {
+                if (results.count == 0 || constraint.toString().equals("")) {
+                    bookList = originalList;
+                    notifyDataSetChanged();
+                } else {
+                    bookList = (ArrayList<Books>) results.values;
+                    notifyDataSetChanged();
+                }
+            }
+
+            @Override
+            protected FilterResults performFiltering(CharSequence constraint) {
+                FilterResults results = new FilterResults();
+                filteredList = new ArrayList<>();
+
+                constraint = constraint.toString().toLowerCase();
+                if(constraint.length() == 0){
+                    results.values = bookList;
+                    results.count  = bookList.size();
+                } else {
+                    for (int i = 0; i < bookList.size(); i++) {
+                        Books books = bookList.get(i);
+                        if (books.getTitle().toLowerCase().contains(constraint.toString()) ||
+                                books.getAuthor().toLowerCase().contains(constraint.toString()) ||
+                                books.getPublisher().toLowerCase().contains(constraint.toString()) ||
+                                books.getContributor().toLowerCase().contains(constraint.toString()) ||
+                                books.getDescription().toLowerCase().contains(constraint.toString())) {
+
+                            filteredList.add(books);
+                            results.count  = filteredList.size();
+                            results.values = filteredList;
+                        }
+                    }
+                }
+                return results;
+            }
+        };
     }
 }
