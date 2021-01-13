@@ -18,10 +18,6 @@ public class HttpService {
     public HttpService() {
     }
 
-    /**
-     * @param reqUrl Url
-     * @return JSON response
-     */
     public String makeHTTPRequest(String reqUrl) {
         String response = null;
         try {

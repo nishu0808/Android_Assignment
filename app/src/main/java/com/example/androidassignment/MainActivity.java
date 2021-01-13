@@ -1,10 +1,15 @@
 package com.example.androidassignment;
 
+import android.app.DatePickerDialog;
+import android.app.Dialog;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.widget.DatePicker;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.Toast;
@@ -32,11 +37,20 @@ public class MainActivity extends AppCompatActivity {
     private static String baseUrl = "https://api.nytimes.com/svc/books/v2/lists/overview.json?published_date=";
     private static String apiKey = "76363c9e70bc401bac1e6ad88b13bd1d";
 
+    private Calendar calendar;
+    private int year;
+    private int month;
+    private int day;
+
+    private String date = "";
+
     private ArrayList<Books> booksList;
     private ListView listView;
     private EditText editText;
 
     private CustomAdapter adapter;
+
+    private boolean isProgress;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -88,6 +102,8 @@ public class MainActivity extends AppCompatActivity {
             String url = baseUrl + mainActivity.getCurrentDate() + "&api-key=" + apiKey;
             String jsonStr = sh.makeHTTPRequest(url);
 
+            mainActivity.isProgress = true;
+
             Log.d(TAG, "Response " + jsonStr);
             if (jsonStr != null) {
                 try {
@@ -118,6 +134,7 @@ public class MainActivity extends AppCompatActivity {
                     mainActivity.runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
+                            mainActivity.isProgress = false;
                             mainActivity.showToast("Error: " + e.getMessage());
                         }
                     });
@@ -126,6 +143,7 @@ public class MainActivity extends AppCompatActivity {
                 mainActivity.runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
+                        mainActivity.isProgress = false;
                         mainActivity.showToast("Couldn't fetch json from server");
                     }
                 });
@@ -138,6 +156,7 @@ public class MainActivity extends AppCompatActivity {
         protected void onPostExecute(Void result) {
             super.onPostExecute(result);
             final MainActivity mainActivity = activityReference.get();
+            mainActivity.isProgress = false;
             mainActivity.adapter = new CustomAdapter(mainActivity.booksList,mainActivity);
             mainActivity.listView.setAdapter(mainActivity.adapter);
         }
@@ -147,13 +166,63 @@ public class MainActivity extends AppCompatActivity {
         Toast.makeText(getApplicationContext(),msg,Toast.LENGTH_LONG).show();
     }
 
-    /**
-     * Function to get current date
-     * @return current date in yyyy-MM-dd format
-     */
     private String getCurrentDate() {
+        if(!date.equals(""))
+            return date;
         Date todayDate = Calendar.getInstance().getTime();
         SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH);
         return formatter.format(todayDate);
     }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        int menuToUse = R.menu.menu;
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(menuToUse, menu);
+
+        return super.onCreateOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(android.view.MenuItem item) {
+        if (!isProgress && item != null && item.getItemId() == R.id.btndate) {
+            calendar = Calendar.getInstance();
+            year  = calendar.get(Calendar.YEAR);
+            month = calendar.get(Calendar.MONTH);
+            day   = calendar.get(Calendar.DAY_OF_MONTH);
+            showDialog(999);
+            return true;
+        }
+        return false;
+    }
+
+    private void updateDate(String newDate) {
+        date = newDate;
+        new FetchData(this).execute();
+    }
+
+    @Override
+    protected Dialog onCreateDialog(int id) {
+        // TODO Auto-generated method stub
+        if (id == 999) {
+            return new DatePickerDialog(this, myDateListener, year, month, day);
+        }
+        return null;
+    }
+
+    private DatePickerDialog.OnDateSetListener myDateListener = new DatePickerDialog.OnDateSetListener() {
+        @Override
+        public void onDateSet(DatePicker arg0, int arg1, int arg2, int arg3) {
+            StringBuilder sb = new StringBuilder();
+            String val2 = String.valueOf(arg2 + 1);
+            String val3 = String.valueOf(arg3);
+
+            if(((arg2 + 1) < 10))
+                val2 = "0"+(arg2 + 1);
+            if(arg3 < 10)
+                val3 = "0" + arg3;
+            sb.append(arg1).append("-").append(val2).append("-").append(val3);
+            updateDate(sb.toString());
+        }
+    };
 }
